@@ -19,11 +19,22 @@ package com.example.androidme
 import android.app.Application
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import com.example.androidme.utils.rotateImageToCorrectOrientation
+import com.google.firebase.ml.vision.FirebaseVision
+import com.google.firebase.ml.vision.common.FirebaseVisionImage
+import com.google.firebase.ml.vision.face.FirebaseVisionFace
+import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetector
+import com.google.firebase.ml.vision.face.FirebaseVisionFaceDetectorOptions
+import com.google.firebase.ml.vision.face.FirebaseVisionFaceLandmark
 import createTempImageFile
 import java.io.File
+
+private const val EYE_TO_FACE_RATIO = 12
+private const val ANTENNAE_HEIGHT_RATIO = 4
+private const val ANTENNAE_WIDTH_RATIO = 15
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -41,8 +52,23 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     val androidImageDrawable: MutableLiveData<BitmapDrawable> = MutableLiveData()
 
+    private var firebaseFaceDetector: FirebaseVisionFaceDetector
+
     init {
         androidImageDrawable.value = startingImage
+
+        // Sets options for facial detection
+        val firebaseFaceDetectionOptions = FirebaseVisionFaceDetectorOptions.Builder()
+            // Sets the option to favor accuracy over speed
+            .setPerformanceMode(FirebaseVisionFaceDetectorOptions.ACCURATE)
+            // Sets the detector to find all facial landmarks
+            .setLandmarkMode(FirebaseVisionFaceDetectorOptions.ALL_LANDMARKS)
+            // Allows us to tell if eyes are open or face is smiling
+            .setClassificationMode(FirebaseVisionFaceDetectorOptions.ALL_CLASSIFICATIONS)
+            .build()
+
+        firebaseFaceDetector = FirebaseVision.getInstance()
+            .getVisionFaceDetector(firebaseFaceDetectionOptions)
     }
 
     fun processAndSetImage() {
@@ -66,50 +92,88 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun detectFaceAndAndroidIt(photoBitmap: Bitmap){
 
-        // 1. Create a new blank mutable Bitmap
-        val resultBitmap = Bitmap.createBitmap(
-            photoBitmap.width,
-            photoBitmap.height,
-            Bitmap.Config.RGB_565
-        )
 
-        // 2. Construct your Canvas using that Bitmap
-        val canvas = Canvas(resultBitmap)
+        val firebaseVisionImage = FirebaseVisionImage.fromBitmap(photoBitmap)
 
-        // 3. Tell the Canvas to first draw the photo
-        canvas.drawBitmap(photoBitmap, 0.toFloat(), 0.toFloat(), null)
+        // Run the facial detection
+        firebaseFaceDetector.detectInImage(firebaseVisionImage)
+            .addOnSuccessListener { faces ->
 
-        // 4. Tell the Canvas to draw some lines and shapes
-        drawAntennaeAndEyes(canvas)
+                // 1. Create a new blank mutable Bitmap
+                val resultBitmap = Bitmap.createBitmap(
+                    photoBitmap.width,
+                    photoBitmap.height,
+                    Bitmap.Config.RGB_565
+                )
 
-        // 5. Display the final tempAndroidFaceBitmap
-        androidImageDrawable.value = BitmapDrawable(getApplication<Application>().resources, resultBitmap)
+                // 2. Construct your Canvas using that Bitmap
+                val canvas = Canvas(resultBitmap)
+
+                // 3. Tell the Canvas to first draw the photo
+                canvas.drawBitmap(photoBitmap, 0.toFloat(), 0.toFloat(), null)
+
+                // For each face in faces, draw the android ears and eyes
+                for (face in faces) {
+                    // 4. Tell the Canvas to draw some lines and shapes
+                    drawAntennaeAndEyes(face, canvas)
+                }
+
+                // 5. Display the final tempAndroidFaceBitmap
+                androidImageDrawable.value = BitmapDrawable(getApplication<MyApplication>().resources, resultBitmap)
+
+            }
+            .addOnFailureListener {
+                Log.i(TAG, "There are no faces detected in this photo, try again")
+            }
 
     }
 
-    private fun drawAntennaeAndEyes(canvas: Canvas) {
+    private fun drawAntennaeAndEyes(firebaseFace: FirebaseVisionFace, tempAndroidFaceCanvas: Canvas) {
+
+        // Locate eyes on face and save into variables
+        val leftEye = firebaseFace.getLandmark(FirebaseVisionFaceLandmark.LEFT_EYE)
+        val rightEye = firebaseFace.getLandmark(FirebaseVisionFaceLandmark.RIGHT_EYE)
+
+        if (leftEye == null || rightEye == null) {
+            return
+        }
+
         /** Configure and draw antennae **/
 
         // Configure paint settings
         val antennaePaint = Paint()
-        antennaePaint.color = getApplication<Application>().getColor(R.color.android_green)
-        antennaePaint.strokeWidth = 30f
+        antennaePaint.color = getApplication<MyApplication>().getColor(R.color.android_green)
+        antennaePaint.strokeWidth = firebaseFace.boundingBox.width() / ANTENNAE_WIDTH_RATIO.toFloat()
         antennaePaint.strokeCap = Paint.Cap.ROUND
 
         // Set the length of the antennae
-        val bottomAntennaeY = 400f
-        val topAntennaeY = 350f
+        val bottomAntennaeY = firebaseFace.boundingBox.top.toFloat()
+        val topAntennaeY = (bottomAntennaeY - firebaseFace.boundingBox.height() / ANTENNAE_HEIGHT_RATIO)
 
         // Draw left antennae
-        canvas.drawLine(
-            350f, topAntennaeY,
-            360f, bottomAntennaeY, antennaePaint
+        tempAndroidFaceCanvas.drawLine(
+            firebaseFace.boundingBox.left.toFloat(), topAntennaeY,
+            leftEye.position.x, bottomAntennaeY, antennaePaint
         )
 
         // Draw right antennae
-        canvas.drawLine(
-            500f, topAntennaeY,
-            490f, bottomAntennaeY, antennaePaint
+        tempAndroidFaceCanvas.drawLine(
+            firebaseFace.boundingBox.right.toFloat(), topAntennaeY,
+            rightEye.position.x, bottomAntennaeY, antennaePaint
         )
+
+        /** Configure and draw eyes **/
+
+        // Configure eye settings
+        val eyePaint = Paint()
+        eyePaint.color = Color.WHITE
+
+        // Set radius of eyes
+        val eyeRadius: Float = (firebaseFace.boundingBox.width() / EYE_TO_FACE_RATIO).toFloat()
+
+        // Draw left eye
+        tempAndroidFaceCanvas.drawCircle(leftEye.position.x, leftEye.position.y, eyeRadius, eyePaint)
+        // Draw right eye
+        tempAndroidFaceCanvas.drawCircle(rightEye.position.x, rightEye.position.y, eyeRadius, eyePaint)
     }
 }
