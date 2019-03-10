@@ -21,6 +21,9 @@ import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
+import com.example.androidme.utils.rotateImageToCorrectOrientation
+import createTempImageFile
+import java.io.File
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -34,6 +37,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         application.resources,
         BitmapFactory.decodeResource(application.resources, R.drawable.android_me))
 
+    private var tempPhotoFilePath: String? = null
+
     val androidImageDrawable: MutableLiveData<BitmapDrawable> = MutableLiveData()
 
     init {
@@ -42,5 +47,17 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun processAndSetImage() {
         androidImageDrawable.value = loadingImage
+
+        tempPhotoFilePath?.let {
+            // Rotates the photo from the camera
+            val tempPhotoBitmap = rotateImageToCorrectOrientation(BitmapFactory.decodeFile(it), it)
+            androidImageDrawable.value = BitmapDrawable(getApplication<Application>().resources, tempPhotoBitmap)
+        }
+    }
+
+    fun createTempImageFile(): File? {
+        val photoFile = createTempImageFile(getApplication<Application>())
+        tempPhotoFilePath = photoFile?.absolutePath
+        return photoFile
     }
 }

@@ -26,6 +26,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
+import createImageFileUri
 
 private const val REQUEST_IMAGE_CAPTURE = 2
 
@@ -73,7 +74,22 @@ class MainActivity : AppCompatActivity() {
 
         // Ensure that there's a camera activity to handle the intent
         if (takePictureIntent.resolveActivity(packageManager) != null) {
-            return takePictureIntent
+
+            // Create the temporary File where the photo should go
+            val photoFile = viewModel.createTempImageFile()
+
+            // Continue only if the File was successfully created
+            if (photoFile != null) {
+
+                // Get the content URI for the image file
+                val photoURI = createImageFileUri(application, photoFile)
+
+                // Add the URI so the camera can store the image
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI)
+
+                // Launch the camera activity
+                return takePictureIntent
+            }
         }
         return null
     }
