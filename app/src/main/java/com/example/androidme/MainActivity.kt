@@ -22,6 +22,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 
 private const val REQUEST_IMAGE_CAPTURE = 2
@@ -43,12 +44,16 @@ class MainActivity : AppCompatActivity() {
         // Gets the ViewModel associated with "this" Activity
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
 
-        androidMeImageView.setImageDrawable(viewModel.androidImageDrawable)
-
         // Set onClickListener
         photoButton.setOnClickListener {
             viewModel.processAndSetImage()
-            androidMeImageView.setImageDrawable(viewModel.androidImageDrawable)
         }
+
+        // Update the layout when finalPhotoBitmapDrawable changes
+        viewModel.androidImageDrawable.observe(this, Observer { bitmapDrawable ->
+            // Update the layout
+            androidMeImageView.setImageDrawable(bitmapDrawable)
+        })
+
     }
 }

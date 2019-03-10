@@ -20,6 +20,7 @@ import android.app.Application
 import android.graphics.*
 import android.graphics.drawable.BitmapDrawable
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.MutableLiveData
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -33,13 +34,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         application.resources,
         BitmapFactory.decodeResource(application.resources, R.drawable.android_me))
 
-    var androidImageDrawable: BitmapDrawable
+    val androidImageDrawable: MutableLiveData<BitmapDrawable> = MutableLiveData()
 
     init {
-        androidImageDrawable = startingImage
+        androidImageDrawable.value = startingImage
     }
 
     fun processAndSetImage() {
-        androidImageDrawable = loadingImage
+        androidImageDrawable.value = loadingImage
     }
 }
