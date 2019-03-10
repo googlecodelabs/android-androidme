@@ -17,14 +17,24 @@
 package com.example.androidme
 
 import android.os.Bundle
+import android.widget.Button
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 
 private const val REQUEST_IMAGE_CAPTURE = 2
 
 class MainActivity : AppCompatActivity() {
 
+    private lateinit var androidMeImageView: ImageView
+    private lateinit var photoButton: Button
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        androidMeImageView = findViewById(R.id.androidImage)
+        photoButton = findViewById(R.id.androidButton)
+
+        photoButton.text = "Android is fun!"
     }
 }
