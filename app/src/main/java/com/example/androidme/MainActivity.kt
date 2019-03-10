@@ -16,12 +16,14 @@
 
 package com.example.androidme
 
-import android.graphics.BitmapFactory
-import android.graphics.drawable.BitmapDrawable
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
+import android.provider.MediaStore
 import android.widget.Button
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
 
@@ -46,7 +48,15 @@ class MainActivity : AppCompatActivity() {
 
         // Set onClickListener
         photoButton.setOnClickListener {
-            viewModel.processAndSetImage()
+            // Launch the camera
+            val intent = cameraIntent()
+            if (intent != null) {
+                ActivityCompat.startActivityForResult(
+                    this,
+                    intent,
+                    REQUEST_IMAGE_CAPTURE,
+                    null)
+            }
         }
 
         // Update the layout when finalPhotoBitmapDrawable changes
@@ -55,5 +65,25 @@ class MainActivity : AppCompatActivity() {
             androidMeImageView.setImageDrawable(bitmapDrawable)
         })
 
+    }
+
+    private fun cameraIntent(): Intent? {
+        // Create the capture image intent
+        val takePictureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+
+        // Ensure that there's a camera activity to handle the intent
+        if (takePictureIntent.resolveActivity(packageManager) != null) {
+            return takePictureIntent
+        }
+        return null
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+
+        // If the image capture activity was called and was successful
+        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == Activity.RESULT_OK) {
+            // Process the image and set it to the TextView
+            viewModel.processAndSetImage()
+        }
     }
 }
