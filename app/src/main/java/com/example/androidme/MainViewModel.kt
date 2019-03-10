@@ -51,7 +51,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         tempPhotoFilePath?.let {
             // Rotates the photo from the camera
             val tempPhotoBitmap = rotateImageToCorrectOrientation(BitmapFactory.decodeFile(it), it)
-            androidImageDrawable.value = BitmapDrawable(getApplication<Application>().resources, tempPhotoBitmap)
+            // Calls the facial detection on the correctly rotated image
+            detectFaceAndAndroidIt(tempPhotoBitmap)
         }
     }
 
@@ -59,5 +60,56 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         val photoFile = createTempImageFile(getApplication<Application>())
         tempPhotoFilePath = photoFile?.absolutePath
         return photoFile
+    }
+
+    /** Face Detection and Drawing Code **/
+
+    private fun detectFaceAndAndroidIt(photoBitmap: Bitmap){
+
+        // 1. Create a new blank mutable Bitmap
+        val resultBitmap = Bitmap.createBitmap(
+            photoBitmap.width,
+            photoBitmap.height,
+            Bitmap.Config.RGB_565
+        )
+
+        // 2. Construct your Canvas using that Bitmap
+        val canvas = Canvas(resultBitmap)
+
+        // 3. Tell the Canvas to first draw the photo
+        canvas.drawBitmap(photoBitmap, 0.toFloat(), 0.toFloat(), null)
+
+        // 4. Tell the Canvas to draw some lines and shapes
+        drawAntennaeAndEyes(canvas)
+
+        // 5. Display the final tempAndroidFaceBitmap
+        androidImageDrawable.value = BitmapDrawable(getApplication<Application>().resources, resultBitmap)
+
+    }
+
+    private fun drawAntennaeAndEyes(canvas: Canvas) {
+        /** Configure and draw antennae **/
+
+        // Configure paint settings
+        val antennaePaint = Paint()
+        antennaePaint.color = getApplication<Application>().getColor(R.color.android_green)
+        antennaePaint.strokeWidth = 30f
+        antennaePaint.strokeCap = Paint.Cap.ROUND
+
+        // Set the length of the antennae
+        val bottomAntennaeY = 400f
+        val topAntennaeY = 350f
+
+        // Draw left antennae
+        canvas.drawLine(
+            350f, topAntennaeY,
+            360f, bottomAntennaeY, antennaePaint
+        )
+
+        // Draw right antennae
+        canvas.drawLine(
+            500f, topAntennaeY,
+            490f, bottomAntennaeY, antennaePaint
+        )
     }
 }

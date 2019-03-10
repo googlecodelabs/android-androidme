@@ -15,7 +15,8 @@
   -->
 
 <resources>
-    <color name="colorPrimary">#008577</color>
-    <color name="colorPrimaryDark">#00574B</color>
+    <color name="colorPrimary">#757575</color>
+    <color name="colorPrimaryDark">#494949</color>
     <color name="colorAccent">#D81B60</color>
+    <color name="android_green">#8BC34A</color>
 </resources>
