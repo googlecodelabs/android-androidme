@@ -16,6 +16,8 @@
 
 package com.example.androidme
 
+import android.graphics.BitmapFactory
+import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageView
@@ -35,6 +37,11 @@ class MainActivity : AppCompatActivity() {
         androidMeImageView = findViewById(R.id.androidImage)
         photoButton = findViewById(R.id.androidButton)
 
-        photoButton.text = "Android is fun!"
+        photoButton.setOnClickListener {
+            val loadingImage = BitmapDrawable(application.resources,
+                BitmapFactory.decodeResource(application.resources, R.drawable.android_you))
+            androidMeImageView.setImageDrawable(loadingImage)
+        }
+
     }
 }
