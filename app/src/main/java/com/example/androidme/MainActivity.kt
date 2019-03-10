@@ -22,6 +22,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProviders
 
 private const val REQUEST_IMAGE_CAPTURE = 2
 
@@ -30,6 +31,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var androidMeImageView: ImageView
     private lateinit var photoButton: Button
 
+    private lateinit var viewModel: MainViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -37,11 +40,15 @@ class MainActivity : AppCompatActivity() {
         androidMeImageView = findViewById(R.id.androidImage)
         photoButton = findViewById(R.id.androidButton)
 
-        photoButton.setOnClickListener {
-            val loadingImage = BitmapDrawable(application.resources,
-                BitmapFactory.decodeResource(application.resources, R.drawable.android_you))
-            androidMeImageView.setImageDrawable(loadingImage)
-        }
+        // Gets the ViewModel associated with "this" Activity
+        viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
 
+        androidMeImageView.setImageDrawable(viewModel.androidImageDrawable)
+
+        // Set onClickListener
+        photoButton.setOnClickListener {
+            viewModel.processAndSetImage()
+            androidMeImageView.setImageDrawable(viewModel.androidImageDrawable)
+        }
     }
 }
